@@ -112,7 +112,7 @@ def sort_iter(_object):
                                             print(" - Matched category: " + _category + ", filters " + str(_filters))
                                             folder_matched = _value['folder']
                                             category_matched = _category
-                                            filter_matched = _match;
+                                            filter_matched = _match
                                             ext_matched = _filter
                                         # else:
                                         # print (" --- ERROR: Category Not Found! -  Category " + _category + ", filters " + str(_match))
