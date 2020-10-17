@@ -15,17 +15,17 @@ counter = Counter()
 # timestamp = time.strftime('%d.%m_%H:%M')
 
 project_folder_structure = {
-    "textures": {"folder": "tex", "filter": {".png", ".jpg"}},
-    "materials": {"folder": "mat", "filter": {".mat"}},
-    "models": {"folder": "models", "filter": {".obj", ".mtl", ".fbx"}},
-    "scripts": {"folder": "scripts", "filter": {".c", ".py", ".txt"}},
+    "textures": {"folder": "tex", "filter": [".png", ".jpg"]},
+    "materials": {"folder": "mat", "filter": [".mat"]},
+    "models": {"folder": "models", "filter": [".obj", ".mtl", ".fbx"]},
+    "scripts": {"folder": "scripts", "filter": [".c", ".py", ".txt"]},
 }
 
 project_assets_category = {
-    "trees": {"tree", "oak", "pine", "log", "bark"},
-    "rocks": {"rock", "cliff", "stone"},
-    "vegetation": {"grass", "bush", "leave", "strand"},
-    "vfx": {"fx", "effect", "particle", "explosion"},
+    "trees": ["tree", "oak", "pine", "log", "bark"],
+    "rocks": ["rock", "cliff", "stone"],
+    "vegetation": ["grass", "bush", "leave", "strand"],
+    "vfx": ["fx", "effect", "particle", "explosion"],
 }
 
 

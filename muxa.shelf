@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <shelfSet name="muxa_shelf-set" label="Muxa Shelf-Set">
+    <memberToolshelf name="muxa_shelf_fbx_tools"/>
+  </shelfSet>
+
+  <toolshelf name="muxa_shelf_fbx_tools" label="FBX Tools">
+    <memberTool name="process_fbx_pieces"/>
+    <memberTool name="check_site-packges_folder"/>
+    <memberTool name="print_environment"/>
+    <memberTool name="tool_generate_house"/>
+    <memberTool name="tool_print_shapes"/>
+  </toolshelf>
+
+  <tool name="tool_print_shapes" label="Shapes" icon="hicon:/SVGIcons.index?NETWORKS_sop.svg">
+    <script scriptType="python"><![CDATA[import geotools
+reload(geotools)
+geotools.print_shape_types()
+]]></script>
+  </tool>
+
+  <tool name="tool_generate_house" label="Generate House from Selected Geo" icon="hicon:/SVGIcons.index?BUTTONS_match_scale.svg">
+    <toolMenuContext name="viewer">
+      <contextNetType>OBJ</contextNetType>
+    </toolMenuContext>
+    <toolMenuContext name="network">
+      <contextNetType>OBJ</contextNetType>
+    </toolMenuContext>
+    <script scriptType="python"><![CDATA[import geotools
+reload(geotools)
+geotools.generate_house()]]></script>
+  </tool>
+
+  <tool name="print_environment" label="Print Env Var" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[import hou
+
+# print current scene name
+print hou.expandString("$HIPNAME")]]></script>
+  </tool>
+
+  <tool name="check_site-packges_folder" label="Site-Packages Folder" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[print (hou.getPreferenceNames())
+#for name in hou.getPreferenceNames():
+#    print (name[0] +'='+ name[1])]]></script>
+  </tool>
+
+  <tool name="process_fbx_pieces" label="Process FBX Pieces" icon="hicon:/SVGIcons.index?DOP_rbdfracturedobject.svg">
+    <script scriptType="python"><![CDATA[import fbxtools
+reload(fbxtools)
+fbxtools.processFbx2Pieces()]]></script>
+  </tool>
+</shelfDocument>
