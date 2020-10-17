@@ -2,11 +2,13 @@ import hou
 from pathlib import Path
 #from collections import Counter
 
-default_folder = 'C:/Projects/MegaProject/models/rocks/stone'
+default_folder = 'C:/Projects/MegaProject/models'
 target_folder = Path(default_folder)
 orig_filename = ''
 tops = False
 counter = 0
+break_pieces = 10
+isooffset_offset = -1
 
 incr_x=4
 incr_y=-1
@@ -103,7 +105,7 @@ def create_sop_network(obj,node,target,orig_filename,root_node,item_count):
     print ("        - Creating separate Geo network for item# "+str(item_count)+". "+node.name())
     
     root = obj.createNode('geo')
-    root.setName('ProcessFBX-'+node.name())
+    root.setName('ProcessFBX_'+orig_filename+'_'+node.name())
     
     #fbx = root.createOutputNode('object_merge', 'IMPORT_FBX_OBJ')
     fbx = root.createNode('object_merge','IMPORT_FBX_OBJ')
@@ -111,11 +113,11 @@ def create_sop_network(obj,node,target,orig_filename,root_node,item_count):
     fbx.parm('xformtype').set(1)
 
     
-    fracture = fracture_to_pieces(fbx,10)
+    fracture = fracture_to_pieces(fbx,break_pieces)
     last = fracture
  
     if not tops:
-        write_files = write_files_with_loop(last,root,target,orig_filename)
+        write_files = write_files_with_loop(last,node,target,orig_filename,root)
         last = write_files
         
      # OUTPUTS
@@ -171,7 +173,7 @@ def create_separate_rop_network(obj,node,target,orig_filename,root_node,item_cou
     print ("        - Creating separate network for rendering/writing PDG result" + node.name())
     # ROP Output for PDG
     rop = obj.createNode('geo')
-    rop.setName('RenderFBX-'+node.name())
+    rop.setName('RenderFBX_'+orig_filename+'_'+node.name())
     file_pdg = rop.createNode('file')
     file_pdg.parm('file').setExpression('@pdg_input')
 
@@ -179,11 +181,26 @@ def create_separate_rop_network(obj,node,target,orig_filename,root_node,item_cou
     #piece_folder = orig_filename + '_Pieces'
     #rop_geometry.parm('sopoutput').set(str(Path(Path(target / piece_folder).with_name('/'+node.name()+'/'+node.name()+'_`@piecevalue`')).with_suffix('.bgeo.sc')))
     #rop_geometry.parm('sopoutput').set(str(Path(target))+('\\'+piece_folder+'\\'+node.name()+'_`@piecevalue`.bgeo.sc'))
-    rop_geometry.parm('sopoutput').set(str(Path(target))+('\\'+orig_filename+'_'+node.name()+'_`@piecevalue`.bgeo.sc'))
+    
+    dst_path = Path(target).joinpath(orig_filename+'_pieces')
+
+    # for some reason "create intermediate folde is not working as expected, I suspect because it has an expression
+    # create missing folders with python
+    if not Path(dst_path).is_dir():
+        try:
+            Path(dst_path).mkdir(parents=True)
+        except OSError:
+            print ("          - Creation of the directory %s failed" % dst_path)
+        else:
+            print ("          - Successfully created the directory %s " % dst_path)
+    
+    rop_geometry.parm('sopoutput').set( str(dst_path) +'\\' +orig_filename+'_'+node.name()
+           +'_piece-`padzero(2, strreplace(@piecevalue,"piece",""))`.bgeo.sc')
+    
     #rop_geometry.setRenderFlag(1)
 
     rop.layoutChildren()
-    rop.move(hou.Vector2(root_node.position()[0]+5,root_node.position()[1]))
+    rop.move(hou.Vector2(root_node.position()[0]-1,root_node.position()[1]-0.5))
 
     print ('        - Done')
     return rop, rop_geometry
@@ -193,7 +210,7 @@ def fracture_to_pieces(root, piece_count):
     print('          - Fracturing ...')
 
     isooffset = root.createOutputNode('isooffset')
-    isooffset.parm('offset').set(-10)
+    isooffset.parm('offset').set(isooffset_offset)
 
     scatter = isooffset.createOutputNode('scatter::2.0')
     scatter.parm('npts').set(piece_count)
@@ -209,7 +226,7 @@ def fracture_to_pieces(root, piece_count):
     '''
     return voronoifracture
 
-def write_files_with_loop(node,root,target,orig_filename):
+def write_files_with_loop(node,item,target,orig_filename,root):
     
     #for loop 
     block_begin = node.createOutputNode('block_begin')
@@ -231,7 +248,31 @@ def write_files_with_loop(node,root,target,orig_filename):
     file_cache = block_begin.createOutputNode('filecache')
     file_cache.parm('filemode').set('write')
     file_cache.parm('trange').set('off')
-    file_cache.parm('file').set(str(Path(target))+('\\'+orig_filename+'_'+node.name()+'_piece-`padzero(2, detail("'+file_cache.relativePathTo(metadata)+'","iteration",0))`.bgeo.sc'))
+    
+    dst_path = Path(target).joinpath(orig_filename+'_pieces')
+
+    # for some reason "create intermediate folde is not working as expected, I suspect because it has an expression
+    # create missing folders with python
+    if not Path(dst_path).is_dir():
+        try:
+            Path(dst_path).mkdir(parents=True)
+        except OSError:
+            print ("          - Creation of the directory %s failed" % dst_path)
+        else:
+            print ("          - Successfully created the directory %s " % dst_path)
+   
+    # here is the issue with / becoming \ when Path is applied on .relativePathTo( 
+    #file_cache.parm('file').set(
+    #    str(Path(
+    #            Path(dst_path)
+    #        .joinpath(orig_filename+'_'+item.name()
+    #        +'_piece-`padzero(2, detail("'+file_cache.relativePathTo(metadata)+'","iteration",0))`')
+    #    ).with_suffix('.bgeo.sc')
+    #    ))
+
+    # workaround
+    file_cache.parm('file').set( str(dst_path) +'\\' +orig_filename+'_'+item.name()
+           +'_piece-`padzero(2, detail("'+file_cache.relativePathTo(metadata)+'","iteration",0))`.bgeo.sc')
 
     block_end.setInput(0,file_cache)
 
@@ -249,6 +290,8 @@ def execute_all_tops():
     
 def processFbx2Pieces():
     global tops
+    global break_pieces
+    
     working_folder = default_folder
     # try to get input from the user
     tmp = hou.ui.selectFile(start_directory=default_folder, 
@@ -263,6 +306,15 @@ def processFbx2Pieces():
                     clear_on_cancel=False, width=0, height=0)
         tops=bool(method_type[0])
         print ("The chosen method is " + choices[tops])
+
+        result, break_pieces = hou.ui.readInput('How many points would you like to use in voronoi fracture ?', 
+                    buttons=('OK','Cancel'), severity=hou.severityType.Message, 
+                    default_choice=0, close_choice=-1, help=None, title='Voronoi fracture points amount per model', 
+                    initial_contents='10')
+
+        if result !=-1:
+            break_pieces = int(break_pieces)
+        print ('Voronoi fracture points amount per model set to ' + str(break_pieces))
 
         print('\n\n\nSTART PROCESSING...')
         #case when multiple files are selected
